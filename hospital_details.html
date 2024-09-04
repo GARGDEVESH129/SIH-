@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Details</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            width: 80%;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .container h1 {
+            color: #1e88e5;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #1e88e5;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .booking-slot, .emergency-ambulance {
+            margin-top: 30px;
+        }
+        .booking-slot select, .emergency-ambulance select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            width: 200px;
+        }
+        .booking-slot button, .emergency-ambulance button {
+            padding: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: #1e88e5;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .booking-slot button:hover, .emergency-ambulance button:hover {
+            background-color: #155a8a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hospital Details</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Hospital Name</th>
+                    <th>Patients Admitted</th>
+                    <th>Doctors in OPD</th>
+                    <th>Doctors Busy in Surgery</th>
+                    <th>Average Waiting Time (mins)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hospital in data %}
+                <tr>
+                    <td>{{ hospital['name'] }}</td>
+                    <td>{{ hospital['patients_admitted'] }}</td>
+                    <td>{{ hospital['doctors_opd'] }}</td>
+                    <td>{{ hospital['doctors_surgery'] }}</td>
+                    <td>{{ hospital['waiting_time'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Booking Slot Feature -->
+        <div class="booking-slot">
+            <h2>Book an Appointment</h2>
+            <label for="slot">Available Slots:</label>
+            <select id="slot">
+                <!-- Options will be dynamically populated here -->
+            </select>
+            <button onclick="bookSlot()">Book Slot</button>
+        </div>
+
+        <!-- Emergency Ambulance Feature -->
+        <div class="emergency-ambulance">
+            <h2>Request Emergency Ambulance</h2>
+            <label for="ambulanceHospital">Hospital:</label>
+            <select id="ambulanceHospital">
+                <!-- Populate this with hospital options if needed -->
+                {% for hospital in data %}
+                <option value="{{ hospital['name'] }}">{{ hospital['name'] }}</option>
+                {% endfor %}
+            </select>
+            <button onclick="requestAmbulance()">Request Ambulance</button>
+        </div>
+    </div>
+
+    <script>
+        // Example of available slots; replace with real data if available
+        const availableSlots = [
+            '10:00 AM - 11:00 AM',
+            '11:00 AM - 12:00 PM',
+            '01:00 PM - 02:00 PM',
+            '03:00 PM - 04:00 PM'
+        ];
+
+        // Populate slots into the select dropdown
+        const slotSelect = document.getElementById('slot');
+        availableSlots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = slot;
+            option.textContent = slot;
+            slotSelect.appendChild(option);
+        });
+
+        // Function to handle booking
+        function bookSlot() {
+            const selectedSlot = slotSelect.value;
+            if (selectedSlot) {
+                alert(`You have booked the slot: ${selectedSlot}`);
+                // Here, you would typically send the booking data to the server
+                /*
+                fetch('/book_slot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ slot: selectedSlot })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Slot booked successfully!');
+                    } else {
+                        alert('Failed to book slot.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was a problem with booking the slot.');
+                });
+                */
+            } else {
+                alert('Please select a slot to book.');
+            }
+        }
+
+        // Function to handle ambulance request
+        function requestAmbulance() {
+            const selectedHospital = document.getElementById('ambulanceHospital').value;
+            if (selectedHospital) {
+                alert(`Ambulance requested to: ${selectedHospital}`);
+                // Here, you would typically send the ambulance request data to the server
+                /*
+                fetch('/request_ambulance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ hospital: selectedHospital })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Ambulance request sent successfully!');
+                    } else {
+                        alert('Failed to send ambulance request.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was a problem with the ambulance request.');
+                });
+                */
+            } else {
+                alert('Please select a hospital to request an ambulance.');
+            }
+        }
+    </script>
+</body>
+</html>
