@@ -180,15 +180,17 @@
 
                         rows.forEach(row => {
                             const columns = row.split(',');
-                            if (columns.length >= 3) {
+                            if (columns.length >= 5) {
                                 const name = columns[0];
                                 const hospitalLat = parseFloat(columns[1].trim());
                                 const hospitalLng = parseFloat(columns[2].trim());
+                                const beds = columns[3].trim();
+                                const doctors = columns[4].trim();
 
                                 if (!isNaN(hospitalLat) && !isNaN(hospitalLng)) {
                                     const distance = getDistance(lat, lng, hospitalLat, hospitalLng);
                                     if (distance <= 10) { // Show only hospitals within 10 km
-                                        nearbyHospitals.push({ name, lat: hospitalLat, lng: hospitalLng });
+                                        nearbyHospitals.push({ name, lat: hospitalLat, lng: hospitalLng, beds, doctors });
                                     }
                                 }
                             }
@@ -198,7 +200,7 @@
                         nearbyHospitals.forEach(hospital => {
                             L.marker([hospital.lat, hospital.lng])
                                 .addTo(map)
-                                .bindPopup(`<b>${hospital.name}</b><br><a href="/register?lat=${hospital.lat}&lng=${hospital.lng}" target="_blank">Register</a>`);
+                                .bindPopup(`<b>${hospital.name}</b><br>Beds: ${hospital.beds}<br>Doctors: ${hospital.doctors}<br><a href="/register?lat=${hospital.lat}&lng=${hospital.lng}" target="_blank">Register</a>`);
                         });
 
                         if (nearbyHospitals.length === 0) {
