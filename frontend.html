@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Prescription Chatbot</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            width: 400px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .header {
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #1e88e5;
+        }
+        .chatbox {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: #fafafa;
+            text-align: left;
+        }
+        .input-area {
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .input-area input {
+            width: 75%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .input-area button {
+            padding: 10px;
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .input-area button:hover {
+            background-color: #1565c0;
+        }
+        .user-input, .bot-response {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        .user-input {
+            background-color: #1e88e5;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .bot-response {
+            background-color: #f1f1f1;
+            color: #333;
+            align-self: flex-start;
+        }
+        #map {
+            height: 600px;
+            width: 100%;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Hospital Chatbot</h1>
+            <p>Your Health Assistant</p>
+        </div>
+        <div class="chatbox" id="chatbox">
+            <!-- Dynamic conversation will appear here -->
+        </div>
+        <div class="input-area">
+            <input type="text" id="condition" placeholder="Enter your condition...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        const chatbox = document.getElementById('chatbox');
+        const mapDiv = document.getElementById('map');
+
+        function sendMessage() {
+            const userInput = document.getElementById('condition').value;
+            if (userInput.trim() !== "") {
+                displayMessage(userInput, 'user-input');
+                fetchPrescription(userInput);
+                document.getElementById('condition').value = ''; // Clear input field
+            }
+        }
+
+        function displayMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.innerHTML = `<p>${message}</p>`;
+            chatbox.appendChild(messageDiv);
+            chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
+        }
+
+        function fetchPrescription(userInput) {
+            fetch(`/get_prescription?condition=${encodeURIComponent(userInput)}`)
+                .then(response => response.json())
+                .then(data => {
+                    let botResponse = "";
+                    if (data.error) {
+                        botResponse = `Sorry, I couldn't find a prescription for that condition. Showing nearby hospitals on the map.`;
+                        showMap();
+                    } else {
+                        botResponse = data.map(prescription => 
+                            `Medicine: ${prescription.Medicine}, Dosage: ${prescription.Dosage}, Duration: ${prescription.Duration_Days} days`
+                        ).join('<br>');
+                    }
+                    displayMessage(botResponse, 'bot-response');
+                });
+        }
+
+        function showMap() {
+            mapDiv.style.display = 'block'; // Show the map
+
+            // Initialize the map
+            var map = L.map('map').setView([18.628626, 73.774600], 13);
+
+            // Add a tile layer to the map
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Haversine formula to calculate distance between two coordinates in km
+            function getDistance(lat1, lng1, lat2, lng2) {
+                function toRad(x) {
+                    return x * Math.PI / 180;
+                }
+
+                var R = 6371; // Radius of Earth in km
+                var dLat = toRad(lat2 - lat1);
+                var dLng = toRad(lng2 - lng1);
+                var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                var d = R * c;
+
+                return d;
+            }
+
+            // Function to load the dataset and display nearby hospitals
+            function loadHospitalsData(lat, lng) {
+                fetch('/static/hospital_locations.csv') // Path to your CSV file
+                    .then(response => response.text())
+                    .then(data => {
+                        const rows = data.split('\n').slice(1); // Skip header row
+                        const nearbyHospitals = [];
+
+                        rows.forEach(row => {
+                            const columns = row.split(',');
+                            if (columns.length >= 3) {
+                                const name = columns[0];
+                                const hospitalLat = parseFloat(columns[1].trim());
+                                const hospitalLng = parseFloat(columns[2].trim());
+
+                                if (!isNaN(hospitalLat) && !isNaN(hospitalLng)) {
+                                    const distance = getDistance(lat, lng, hospitalLat, hospitalLng);
+                                    if (distance <= 10) { // Show only hospitals within 10 km
+                                        nearbyHospitals.push({ name, lat: hospitalLat, lng: hospitalLng });
+                                    }
+                                }
+                            }
+                        });
+
+                        // Plot nearby hospitals on the map
+                        nearbyHospitals.forEach(hospital => {
+                            L.marker([hospital.lat, hospital.lng])
+                                .addTo(map)
+                                .bindPopup(`<b>${hospital.name}</b><br><a href="/register?lat=${hospital.lat}&lng=${hospital.lng}" target="_blank">Register</a>`);
+                        });
+
+                        if (nearbyHospitals.length === 0) {
+                            console.log('No nearby hospitals found within 10 km.');
+                        }
+                    })
+                    .catch(error => console.error('Error loading CSV data:', error));
+            }
+
+            // Get current location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+
+                    map.setView([lat, lng], 13);
+
+                    L.marker([lat, lng])
+                        .addTo(map)
+                        .bindPopup('You are here!')
+                        .openPopup();
+
+                    loadHospitalsData(lat, lng);
+
+                }, function(error) {
+                    console.error('Error getting location:', error);
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        }
+    </script>
+</body>
+</html>
