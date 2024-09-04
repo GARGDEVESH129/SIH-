@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Registration</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .container h1 {
+            color: #2a9d8f;
+            margin-bottom: 20px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-group input, .form-group select {
+            width: calc(100% - 24px);
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: #2a9d8f;
+            outline: none;
+        }
+        .form-group button {
+            padding: 12px;
+            background-color: #2a9d8f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .form-group button:hover {
+            background-color: #1f7a6d;
+        }
+        .hospital-options {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 10px;
+        }
+        .hospital-options label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .hospital-options input[type="checkbox"] {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hospital Registration</h1>
+        <form id="registrationForm">
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" required>
+            </div>
+            <div class="form-group">
+                <label for="hospital">Hospital</label>
+                <select id="hospital" name="hospital" required onchange="updateHospitalOptions()">
+                    <option value="">Select a Hospital</option>
+                    <option value="Aditya Birla Memorial Hospital">Aditya Birla Memorial Hospital</option>
+                    <option value="Deenanath Mangeshkar Hospital">Deenanath Mangeshkar Hospital</option>
+                    <option value="Jehangir Hospital">Jehangir Hospital</option>
+                    <option value="Ruby Hall Clinic">Ruby Hall Clinic</option>
+                    <option value="Sahyadri Hospitals">Sahyadri Hospitals</option>
+                    <option value="Manipal Hospital">Manipal Hospital</option>
+                </select>
+            </div>
+            <div class="form-group hospital-options" id="hospitalOptions">
+                <!-- Dynamic options will be populated here -->
+            </div>
+            <div class="form-group">
+                <button type="submit">Register</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const hospitalOptions = {
+            'Aditya Birla Memorial Hospital': ['Birla'],
+            'Deenanath Mangeshkar Hospital': ['Deenanath'],
+            'Jehangir Hospital': ['Jehangir'],
+            'Ruby Hall Clinic': ['Ruby'],
+            'Sahyadri Hospitals': ['Sahyadri'],
+            'Manipal Hospital': ['Manipal']
+        };
+
+        function updateHospitalOptions() {
+            const selectedHospital = document.getElementById('hospital').value;
+            const optionsDiv = document.getElementById('hospitalOptions');
+
+            optionsDiv.innerHTML = '';
+
+            if (selectedHospital && hospitalOptions[selectedHospital]) {
+                hospitalOptions[selectedHospital].forEach(option => {
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="checkbox" name="options" value="${option}"> ${option}`;
+                    optionsDiv.appendChild(label);
+                });
+            }
+        }
+
+        document.getElementById('registrationForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                hospital: formData.get('hospital'),
+                options: formData.getAll('options')
+            };
+
+            fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    window.location.href = `/hospital_details/${encodeURIComponent(data.hospital)}`;
+                } else {
+                    alert('Registration failed: ' + result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('There was a problem with your registration.');
+            });
+        });
+    </script>
+</body>
+</html>
